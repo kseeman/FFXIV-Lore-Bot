@@ -24,6 +24,7 @@ def test_is_filler(text):
 
 @pytest.mark.parametrize("text", [
     "Greetings, adventurer.", "The test of the Twelve awaits.", "Nothing was deleted.",
+    "O～hohoho! Are those crates I spy?", "Torn from the Heavens／The Dark Colossus",
 ])
 def test_is_not_filler(text):
     assert not is_filler(text)

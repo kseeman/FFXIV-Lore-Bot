@@ -4,12 +4,13 @@ import re
 
 # Button and status glyphs live in the Unicode private use area; they render as
 # icons in game and as noise everywhere else.
-_PRIVATE_USE = re.compile("[-]")
+_PRIVATE_USE = re.compile(r"[\ue000-\uf8ff]")
 _BOLD = re.compile(r"\*\*")
 _TRAILING_SPACE = re.compile(r"[ \t]+$", re.MULTILINE)
 # English sheets carry some untranslated developer placeholders such as
-# "（★未使用／削除予定★）" ("unused / to be deleted").
-_JAPANESE = re.compile("[぀-ヿ㐀-䶿一-鿿！-｠]")
+# "（★未使用／削除予定★）" ("unused / to be deleted"). Match kana and kanji only:
+# English text does use full-width forms such as "～" and "／".
+_JAPANESE = re.compile(r"[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff]")
 # Developer filler left in cut or unvoiced lines.
 _PLACEHOLDER = re.compile(
     r"(?i)report if displayed|isn't the text you're looking for"

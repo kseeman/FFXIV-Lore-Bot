@@ -29,6 +29,9 @@ FOLDERS = {
     "raid": "duty",
     "content": "duty",
 }
+# Shared NPC behaviours (inn doors, retainers, linkshell help, housing menus):
+# interface text, not story.
+SKIPPED_SCRIPT_PREFIX = "CmnDef"
 
 ROLE_KINDS = [
     (re.compile(r"SEQ"), "journal"),
@@ -42,7 +45,16 @@ ROLE_KINDS = [
 # Expansions are numbered from 2.x (A Realm Reborn = ExVersion row 0).
 _CUTSCENE_PATCH = re.compile(r"VoiceMan_0(\d)\d", re.IGNORECASE)
 _FIRST_EXPANSION_MAJOR = 2
-_SYSTEM_SUFFIXES = {"SYS", "SYSTEM"}
+_SYSTEM_MARKERS = {"SYS", "SYSTEM", "MENU", "YESNO"}
+# Scene and action labels that sit among the role tokens but never name a
+# speaker (``LCUT_RANKUP_ZHLOEALIAPOH``, ``ENTER_GUIDE``, ``TALK_SCENE00002``).
+SCENE_LABELS = {
+    "ACCEPT", "BATTLETALK", "COMPLETE", "ENTER", "GUIDE", "KNOWLEDGE", "LCUT",
+    "LEAVE", "MAIN", "NPC", "RANKUP", "REGISTER", "SCENE", "START", "TALK", "TEST",
+    "TUTORIAL",
+}
+# In-game speaker name overrides prefixed to a line: "(-???-)Far across the sea".
+_DISPLAY_SPEAKER = re.compile(r"\(-(.+?)-\)\s*", re.DOTALL)
 
 
 @dataclass
@@ -55,6 +67,7 @@ class Line:
     kind: str
     speaker_key: str | None
     speaker: str | None
+    display_speaker: str | None
     text: str
     quest_id: int | None = None
     quest_name: str | None = None
@@ -85,9 +98,21 @@ def classify_roles(roles: list[str]) -> str:
     for pattern, kind in ROLE_KINDS:
         if pattern.fullmatch(roles[0]):
             return kind
-    if _SYSTEM_SUFFIXES.intersection(roles):
+    if _SYSTEM_MARKERS.intersection(roles) or not _speaker_candidates(roles):
         return "system"
     return "dialogue"
+
+
+def _speaker_candidates(roles: list[str]) -> list[str]:
+    return [r for r in roles if _normalise_role(r) not in SCENE_LABELS]
+
+
+def split_display_speaker(text: str) -> tuple[str | None, str]:
+    """Separate a ``(-Name-)`` speaker override from the spoken text."""
+    match = _DISPLAY_SPEAKER.match(text)
+    if not match:
+        return None, text
+    return match.group(1), text[match.end():]
 
 
 def _normalise_name(name: str) -> str:
@@ -125,13 +150,14 @@ class SpeakerNames:
     def resolve(self, roles: list[str]) -> tuple[str, str, bool]:
         """Return ``(role key, display name, resolved)`` for a line's role tokens.
 
-        The first token matching a known name wins; if none does, the first
-        token is title-cased as a best guess.
+        Scene labels are skipped. The first remaining token matching a known
+        name wins; if none does, the first is title-cased as a best guess.
         """
-        for role in roles:
+        candidates = _speaker_candidates(roles)
+        for role in candidates:
             if name := self._names.get(_normalise_name(_normalise_role(role))):
                 return role, name, True
-        return roles[0], _normalise_role(roles[0]).title(), False
+        return candidates[0], _normalise_role(candidates[0]).title(), False
 
 
 def _capitalise(name: str) -> str:
@@ -205,6 +231,8 @@ def extract(csv_dir: Path) -> Iterator[Line]:
     for folder, category in FOLDERS.items():
         for path in sorted((csv_dir / folder).rglob("*.csv")):
             script = path.stem
+            if script.startswith(SKIPPED_SCRIPT_PREFIX):
+                continue
             quest = quests.get(script.upper()) if category == "quest" else None
             expansion = (
                 quest.expansion if quest
@@ -213,7 +241,7 @@ def extract(csv_dir: Path) -> Iterator[Line]:
             )
             sheet = path.relative_to(csv_dir).with_suffix("").as_posix()
             for index, key, raw in read_script(path):
-                text = clean(raw)
+                display_speaker, text = split_display_speaker(clean(raw))
                 if not text or is_filler(text):
                     continue
                 roles = parse_roles(key)
@@ -230,6 +258,7 @@ def extract(csv_dir: Path) -> Iterator[Line]:
                     kind=kind,
                     speaker_key=speaker_key,
                     speaker=speaker,
+                    display_speaker=display_speaker,
                     text=text,
                     quest_id=quest.quest_id if quest else None,
                     quest_name=quest.name if quest else None,

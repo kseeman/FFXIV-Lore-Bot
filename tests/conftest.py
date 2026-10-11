@@ -55,10 +55,13 @@ def csv_dir(tmp_path: Path) -> Path:
     ])
     write_csv(root / "cut_scene" / "052" / "VoiceMan_05200.csv", [
         [0, "TEXT_VOICEMAN_05200_000010_YSHTOLA", "We must hurry."],
-        [1, "TEXT_VOICEMAN_05200_000020_MYSTERYVOICE", "Wait..."],
+        [1, "TEXT_VOICEMAN_05200_000020_MYSTERYVOICE", "(-???-)Wait..."],
     ])
     write_csv(root / "custom" / "003" / "CtsSfsCharacter1_00386.csv", [
         [0, "TEXT_CTSSFSCHARACTER1_00386_LCUT_RANKUP_ZHLOEALIAPOH_001_000", "Splendid!"],
+    ])
+    write_csv(root / "custom" / "000" / "CmnDefLinkShell_00006.csv", [
+        [0, "TEXT_CMNDEFLINKSHELL_00006_ENTER_GUIDE_001", "To join a linkshell..."],
     ])
     write_csv(root / "shop" / "ShopMenu_00001.csv", [
         [0, "TEXT_SHOPMENU_00001_UI_TITLE", "Crystal Exchange"],

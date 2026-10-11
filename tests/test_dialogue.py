@@ -2,6 +2,7 @@ import pytest
 
 from xivlore.sources.datamining.dialogue import (
     SpeakerNames, classify_roles, cutscene_expansion, extract, parse_roles,
+    split_display_speaker,
 )
 
 
@@ -25,6 +26,10 @@ def test_parse_roles(key, roles):
     (["A12"], "choice"),
     (["POP", "MESSAGE"], "system"),
     (["LEAVE", "GUIDE", "SYS"], "system"),
+    (["TEST", "START", "MENU", "ENTER"], "system"),
+    (["ENTER", "GUIDE"], "system"),
+    (["TALK", "SCENE00002"], "system"),
+    (["LCUT", "RANKUP", "ZHLOEALIAPOH"], "dialogue"),
     (["ALPHINAUD"], "dialogue"),
     ([], "unknown"),
 ])
@@ -40,6 +45,18 @@ def test_speaker_names_resolution():
     assert names.resolve(["DWARFMASTER03671"])[1:] == ("Dwarf Master", True)
     assert names.resolve(["LCUT", "RANKUP", "GRAHATIA"])[:2] == ("GRAHATIA", "G'raha Tia")
     assert names.resolve(["MYSTERYVOICE"]) == ("MYSTERYVOICE", "Mysteryvoice", False)
+    assert names.resolve(["LCUT", "RANKUP", "BEATINE"]) == ("BEATINE", "Beatine", False)
+
+
+@pytest.mark.parametrize("text, split", [
+    ("(-???-)Far across the sea...", ("???", "Far across the sea...")),
+    ("(-Lady-In-Waiting-)Your Grace.", ("Lady-In-Waiting", "Your Grace.")),
+    ("(-*Guidelines (Revision 34)*-)*General Provisions",
+     ("*Guidelines (Revision 34)*", "*General Provisions")),
+    ("No label (-here-).", (None, "No label (-here-).")),
+])
+def test_split_display_speaker(text, split):
+    assert split_display_speaker(text) == split
 
 
 def test_cutscene_expansion():
@@ -73,8 +90,8 @@ def test_extract_quest_lines(csv_dir):
 
 def test_extract_other_folders(csv_dir):
     lines = [l for l in extract(csv_dir) if l.category != "quest"]
-    assert [(l.category, l.speaker, l.expansion, l.text) for l in lines] == [
-        ("cutscene", "Y'shtola", "Shadowbringers", "We must hurry."),
-        ("cutscene", "Mysteryvoice", "Shadowbringers", "Wait..."),
-        ("npc", "Zhloe Aliapoh", None, "Splendid!"),
+    assert [(l.category, l.speaker, l.display_speaker, l.expansion, l.text) for l in lines] == [
+        ("cutscene", "Y'shtola", None, "Shadowbringers", "We must hurry."),
+        ("cutscene", "Mysteryvoice", "???", "Shadowbringers", "Wait..."),
+        ("npc", "Zhloe Aliapoh", None, None, "Splendid!"),
     ]
