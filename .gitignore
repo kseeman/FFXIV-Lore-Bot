@@ -1,0 +1,9 @@
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+
+# Raw source checkouts and built dataset: game text is Square Enix copyright
+# and is published only to the private Hugging Face dataset, never to git.
+.cache/
+dist/
