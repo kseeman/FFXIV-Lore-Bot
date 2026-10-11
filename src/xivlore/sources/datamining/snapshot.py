@@ -32,9 +32,9 @@ class Snapshot:
 
 
 def _git(*args: str, cwd: Path | None = None) -> str:
-    result = subprocess.run(
-        ["git", *args], cwd=cwd, check=True, capture_output=True, text=True
-    )
+    result = subprocess.run(["git", *args], cwd=cwd, capture_output=True, text=True)
+    if result.returncode != 0:
+        raise RuntimeError(f"git {args[0]} failed: {result.stderr.strip()}")
     return result.stdout.strip()
 
 

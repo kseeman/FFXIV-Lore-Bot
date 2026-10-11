@@ -5,7 +5,7 @@ description = "Compile a Final Fantasy XIV lore corpus and publish it as a Huggi
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "huggingface-hub>=0.34",
+    "huggingface-hub>=2.2",
     "pyarrow>=21",
 ]
 
