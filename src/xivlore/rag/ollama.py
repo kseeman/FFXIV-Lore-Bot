@@ -29,6 +29,9 @@ def chat(messages: list[dict], model: str = CHAT_MODEL, num_ctx: int = 6144) -> 
         "model": model,
         "messages": messages,
         "stream": False,
+        # Gemma 4 thinks by default: on the eval that took 3-4x as long for the
+        # same score, and now and then left no answer after the thinking.
+        "think": False,
         "options": {"num_ctx": num_ctx},
     })
     return response["message"]["content"]
