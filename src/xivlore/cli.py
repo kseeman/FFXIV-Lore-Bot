@@ -9,6 +9,8 @@ from xivlore.sources.datamining import snapshot
 DEFAULT_CACHE = Path(".cache/ffxiv-datamining")
 DEFAULT_OUT = Path("dist")
 DEFAULT_INDEX = Path(".cache/index")
+DEFAULT_QUESTIONS = Path("eval/questions.jsonl")
+DEFAULT_REPORTS = Path(".cache/eval")
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -38,6 +40,12 @@ def main(argv: list[str] | None = None) -> int:
     ask.add_argument("--show-context", action="store_true", help="print retrieved passages")
     ask.add_argument("--out", type=Path, default=DEFAULT_OUT)
     ask.add_argument("--index", type=Path, default=DEFAULT_INDEX)
+
+    evaluate = commands.add_parser("eval", help="score answers with and without retrieval")
+    evaluate.add_argument("--questions", type=Path, default=DEFAULT_QUESTIONS)
+    evaluate.add_argument("-k", type=int, default=8, help="passages to retrieve")
+    evaluate.add_argument("--index", type=Path, default=DEFAULT_INDEX)
+    evaluate.add_argument("--reports", type=Path, default=DEFAULT_REPORTS)
 
     args = parser.parse_args(argv)
     if args.command == "fetch":
@@ -104,6 +112,28 @@ def main(argv: list[str] | None = None) -> int:
             print("\nSources:")
             for n, (chunk, _) in enumerate(answer.passages, 1):
                 print(f"  [{n}] {chunk.title} ({chunk.source_id})")
+    elif args.command == "eval":
+        from datetime import datetime
+
+        from xivlore.rag import evaluate as ev
+        from xivlore.rag.index import Index
+        from xivlore.rag.ollama import OllamaError
+
+        try:
+            index = Index(args.index)
+            results = ev.run(ev.load_questions(args.questions), index, k=args.k)
+        except (FileNotFoundError, OllamaError) as e:
+            print(f"error: {e}", file=sys.stderr)
+            return 1
+        for r in results:
+            print(f"{r.question.id:<30} no retrieval {'pass' if r.plain_pass else 'FAIL'}"
+                  f"  with retrieval {'pass' if r.grounded_pass else 'FAIL'}")
+        print(ev.summary(results))
+        # Reports quote game text, so they stay under .cache/ with the index.
+        args.reports.mkdir(parents=True, exist_ok=True)
+        path = args.reports / f"{datetime.now():%Y%m%d-%H%M%S}.md"
+        path.write_text(ev.report(results))
+        print(f"wrote {path}")
     return 0
 
 
