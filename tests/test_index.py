@@ -41,6 +41,11 @@ def test_stale_when_dist_rebuilt(index_dir, dist_dir):
     assert index.is_stale(dist_dir)
 
 
+def test_stale_when_embed_model_changes(index_dir, dist_dir, monkeypatch):
+    monkeypatch.setattr("xivlore.rag.ollama.EMBED_MODEL", "another-embedder")
+    assert Index(index_dir).is_stale(dist_dir)
+
+
 def test_missing_index(tmp_path):
     with pytest.raises(FileNotFoundError, match="xivlore index"):
         Index(tmp_path)

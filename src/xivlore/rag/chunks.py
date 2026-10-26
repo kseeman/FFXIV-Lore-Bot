@@ -37,7 +37,7 @@ def chunk_corpus(dist_dir: Path) -> list[Chunk]:
 
 def transcript_chunks(row: dict) -> Iterator[Chunk]:
     head, _, body = row["text"].partition("\n\n")
-    for n, window in enumerate(windows(body.split("\n"), MAX_CHARS - len(head))):
+    for n, window in enumerate(windows(body.split("\n"), MAX_CHARS - len(head) - 2)):
         yield Chunk(
             id=f"{row['id']}#{n}",
             source_id=row["id"],
@@ -78,4 +78,7 @@ def windows(lines: list[str], max_chars: int) -> Iterator[str]:
         while back - 1 > start and carried + len(lines[back - 1]) + 1 <= OVERLAP_CHARS:
             back -= 1
             carried += len(lines[back]) + 1
+        # Carrying lines the next one cannot join would repeat them on their own.
+        if carried + len(lines[end]) + 1 > max_chars:
+            back = end
         start = back

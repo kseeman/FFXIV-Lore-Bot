@@ -40,3 +40,15 @@ def test_chunk_corpus_reads_both_configs(dist_dir):
         "Moogle (triple triad card)\nKupo.",
         "Gil (item)\nStandard Eorzean currency.",
     ]
+
+
+def test_windows_skip_overlap_the_next_line_cannot_join():
+    out = list(windows(["a" * 100, "b" * 100, "c" * 1100], 1150))
+    assert out == ["a" * 100 + "\n" + "b" * 100, "c" * 1100]
+
+
+def test_transcript_chunks_stay_within_max(monkeypatch):
+    monkeypatch.setattr(chunks, "MAX_CHARS", 60)
+    row = {"id": "quest/X", "category": "quest", "title": "T",
+           "text": "T\nGridania\n\n" + "\n".join(f"A: line {i:02}." for i in range(20))}
+    assert all(len(c.text) <= 60 for c in transcript_chunks(row))

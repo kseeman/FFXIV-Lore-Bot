@@ -42,6 +42,7 @@ def build_index(
     progress: Callable[[int, int], None] | None = None,
 ) -> dict:
     """Chunk and embed the build in ``dist_dir`` and write the index to ``index_dir``."""
+    built_at = _build_stamp(dist_dir)
     chunks = chunk_corpus(dist_dir)
     vectors = []
     for start in range(0, len(chunks), BATCH_SIZE):
@@ -55,7 +56,7 @@ def build_index(
     pq.write_table(pa.Table.from_pylist([asdict(c) for c in chunks]),
                    index_dir / "chunks.parquet", compression="zstd")
     meta = {
-        "built_at": _build_stamp(dist_dir),
+        "built_at": built_at,
         "embed_model": ollama.EMBED_MODEL,
         "chunks": len(chunks),
     }
@@ -73,8 +74,9 @@ class Index:
         self.chunks = [Chunk(**row) for row in rows]
 
     def is_stale(self, dist_dir: Path) -> bool:
-        """True if ``dist_dir`` holds a different build than the one indexed."""
-        return self.meta["built_at"] != _build_stamp(dist_dir)
+        """True if ``dist_dir`` or the embedding model changed since indexing."""
+        return (self.meta["built_at"] != _build_stamp(dist_dir)
+                or self.meta["embed_model"] != ollama.EMBED_MODEL)
 
     def search(
         self, question: str, k: int = 8, embed: Embed = ollama.embed_and_unload

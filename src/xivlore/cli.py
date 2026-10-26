@@ -13,6 +13,12 @@ DEFAULT_QUESTIONS = Path("eval/questions.jsonl")
 DEFAULT_REPORTS = Path(".cache/eval")
 
 
+def positive_int(value: str) -> int:
+    if not value.isdigit() or int(value) < 1:
+        raise argparse.ArgumentTypeError(f"must be a positive integer, not {value!r}")
+    return int(value)
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="xivlore", description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
@@ -35,7 +41,7 @@ def main(argv: list[str] | None = None) -> int:
 
     ask = commands.add_parser("ask", help="answer a lore question with the local model")
     ask.add_argument("question")
-    ask.add_argument("-k", type=int, default=8, help="passages to retrieve")
+    ask.add_argument("-k", type=positive_int, default=8, help="passages to retrieve")
     ask.add_argument("--no-rag", action="store_true", help="ask the model without retrieval")
     ask.add_argument("--show-context", action="store_true", help="print retrieved passages")
     ask.add_argument("--out", type=Path, default=DEFAULT_OUT)
@@ -43,7 +49,7 @@ def main(argv: list[str] | None = None) -> int:
 
     evaluate = commands.add_parser("eval", help="score answers with and without retrieval")
     evaluate.add_argument("--questions", type=Path, default=DEFAULT_QUESTIONS)
-    evaluate.add_argument("-k", type=int, default=8, help="passages to retrieve")
+    evaluate.add_argument("-k", type=positive_int, default=8, help="passages to retrieve")
     evaluate.add_argument("--index", type=Path, default=DEFAULT_INDEX)
     evaluate.add_argument("--reports", type=Path, default=DEFAULT_REPORTS)
 
@@ -96,9 +102,10 @@ def main(argv: list[str] | None = None) -> int:
             except FileNotFoundError as e:
                 print(f"error: {e}", file=sys.stderr)
                 return 1
-            if index.is_stale(args.out):
-                print(f"warning: {args.out}/ was rebuilt since indexing; run `xivlore index`",
-                      file=sys.stderr)
+            # dist/ is optional here: without it, staleness simply goes unchecked.
+            if (args.out / "manifest.json").exists() and index.is_stale(args.out):
+                print(f"warning: {args.out}/ or the embedding model changed since indexing;"
+                      " run `xivlore index`", file=sys.stderr)
         try:
             answer = run_ask(args.question, index, k=args.k)
         except OllamaError as e:
