@@ -31,6 +31,14 @@ def main(argv: list[str] | None = None) -> int:
     index.add_argument("--out", type=Path, default=DEFAULT_OUT)
     index.add_argument("--index", type=Path, default=DEFAULT_INDEX)
 
+    ask = commands.add_parser("ask", help="answer a lore question with the local model")
+    ask.add_argument("question")
+    ask.add_argument("-k", type=int, default=8, help="passages to retrieve")
+    ask.add_argument("--no-rag", action="store_true", help="ask the model without retrieval")
+    ask.add_argument("--show-context", action="store_true", help="print retrieved passages")
+    ask.add_argument("--out", type=Path, default=DEFAULT_OUT)
+    ask.add_argument("--index", type=Path, default=DEFAULT_INDEX)
+
     args = parser.parse_args(argv)
     if args.command == "fetch":
         try:
@@ -68,6 +76,34 @@ def main(argv: list[str] | None = None) -> int:
             print(f"\nerror: {e}", file=sys.stderr)
             return 1
         print(f"\nindexed {meta['chunks']:,} passages into {args.index}/")
+    elif args.command == "ask":
+        from xivlore.rag.answer import ask as run_ask
+        from xivlore.rag.index import Index
+        from xivlore.rag.ollama import OllamaError
+
+        index = None
+        if not args.no_rag:
+            try:
+                index = Index(args.index)
+            except FileNotFoundError as e:
+                print(f"error: {e}", file=sys.stderr)
+                return 1
+            if index.is_stale(args.out):
+                print(f"warning: {args.out}/ was rebuilt since indexing; run `xivlore index`",
+                      file=sys.stderr)
+        try:
+            answer = run_ask(args.question, index, k=args.k)
+        except OllamaError as e:
+            print(f"error: {e}", file=sys.stderr)
+            return 1
+        if args.show_context:
+            for n, (chunk, score) in enumerate(answer.passages, 1):
+                print(f"--- [{n}] {chunk.id} ({score:.3f})\n{chunk.text}\n")
+        print(answer.text)
+        if answer.passages:
+            print("\nSources:")
+            for n, (chunk, _) in enumerate(answer.passages, 1):
+                print(f"  [{n}] {chunk.title} ({chunk.source_id})")
     return 0
 
 
