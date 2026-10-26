@@ -64,7 +64,9 @@ uv run xivlore ask "Who leads the Crystarium?"
 uv run xivlore ask --no-rag "Who leads the Crystarium?"   # the model alone
 ```
 
-`--show-context` prints the retrieved passages. The default model fits a
+`--show-context` prints the retrieved passages. `--search` picks how they are
+found: `vector` (by meaning, the default), `keyword` (exact words, via SQLite
+full-text search), or `hybrid` (both rankings merged). The default model fits a
 12 GB GPU; the embedder is unloaded after each question to leave it room.
 
 `xivlore eval` runs every question in `eval/questions.jsonl` with and without

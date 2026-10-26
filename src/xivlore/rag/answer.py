@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass, field
 
-from xivlore.rag import ollama
+from xivlore.rag import DEFAULT_SEARCH, ollama
 from xivlore.rag.chunks import Chunk
 from xivlore.rag.index import Embed, Index
 
@@ -28,6 +28,7 @@ def ask(
     k: int = 8,
     chat=ollama.chat,
     embed: Embed = ollama.embed_and_unload,
+    search: str = DEFAULT_SEARCH,
 ) -> Answer:
     """Answer ``question`` from the top ``k`` passages, or from the model alone if no index."""
     if index is None:
@@ -35,7 +36,7 @@ def ask(
             {"role": "system", "content": PLAIN_SYSTEM},
             {"role": "user", "content": question},
         ]))
-    passages = index.search(question, k, embed=embed)
+    passages = index.search(question, k, embed=embed, mode=search)
     excerpts = "\n\n".join(f"[{n}] {chunk.text}" for n, (chunk, _) in enumerate(passages, 1))
     text = chat([
         {"role": "system", "content": GROUNDED_SYSTEM},
