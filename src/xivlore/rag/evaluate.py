@@ -4,13 +4,13 @@ Questions live in a JSON Lines file, one object per line:
 
     {"id": "...", "question": "...", "answer": "...",
      "must_mention": ["...", ["...", "..."]], "must_not_mention": ["..."],
-     "source_title": "... or [...]"}
+     "source_title": "... or [...]", "category": "..."}
 
 An answer passes if it mentions every ``must_mention`` entry and none of the
 optional ``must_not_mention`` words, ignoring case. An entry that is a list
 passes on any one of its alternatives. Where ``source_title`` names the quest
 or item the answer comes from (or a list of them), the run also checks whether
-retrieval found it.
+retrieval found it. The optional ``category`` groups questions in the summary.
 Keyword matching is crude, so the full answers are written to a report for
 reading through.
 
@@ -36,6 +36,7 @@ class Question:
     must_mention: tuple[tuple[str, ...], ...]
     must_not_mention: tuple[str, ...] = ()
     source_titles: tuple[str, ...] = ()
+    category: str | None = None
 
     def passes(self, text: str) -> bool:
         # Models often write the curly apostrophe; game names use the straight one.
@@ -78,6 +79,7 @@ def load_questions(path: Path) -> list[Question]:
                 must_mention=tuple(_strings(m) for m in row["must_mention"]),
                 must_not_mention=tuple(row.get("must_not_mention", ())),
                 source_titles=_strings(row.get("source_title", ())),
+                category=row.get("category"),
             ))
     return questions
 
@@ -105,7 +107,7 @@ def report(results: list[Result]) -> str:
     def mark(ok: bool | None) -> str:
         return {True: "pass", False: "FAIL", None: "n/a"}[ok]
 
-    lines = ["# Lore eval", "", summary(results), ""]
+    lines = ["# Lore eval", "", "```", summary(results), "```", ""]
     for r in results:
         q = r.question
         lines += [
@@ -138,6 +140,16 @@ def criteria(q: Question) -> str:
 
 
 def summary(results: list[Result]) -> str:
+    """Overall scores, then one line per category if questions have them."""
+    lines = [_scores(results)]
+    categories = dict.fromkeys(r.question.category for r in results if r.question.category)
+    for category in categories:
+        group = [r for r in results if r.question.category == category]
+        lines.append(f"  {category}: {_scores(group)}")
+    return "\n".join(lines)
+
+
+def _scores(results: list[Result]) -> str:
     n = len(results)
     plain = sum(r.plain_pass for r in results)
     grounded = sum(r.grounded_pass for r in results)

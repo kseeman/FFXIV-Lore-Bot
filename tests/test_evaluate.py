@@ -2,7 +2,8 @@ import json
 
 from conftest import fake_embed
 
-from xivlore.rag.evaluate import Question, load_questions, report, run
+from xivlore.rag.answer import Answer
+from xivlore.rag.evaluate import Question, Result, load_questions, report, run, summary
 from xivlore.rag.index import Index, build_index
 
 
@@ -13,7 +14,7 @@ def test_load_questions(tmp_path):
         + "\n\n"
         + json.dumps({"id": "b", "question": "Q?", "answer": "A.",
                       "must_mention": [["y", "z"]], "must_not_mention": ["w"],
-                      "source_title": "Gil"})
+                      "source_title": "Gil", "category": "items"})
         + "\n"
     )
     a, b = load_questions(path)
@@ -21,6 +22,7 @@ def test_load_questions(tmp_path):
     assert a.source_titles == ()
     assert b.must_mention == (("y", "z"),) and b.must_not_mention == ("w",)
     assert b.source_titles == ("Gil",)
+    assert a.category is None and b.category == "items"
 
 
 def test_passes_needs_every_group_ignoring_case():
@@ -75,3 +77,16 @@ def test_run_answers_at_temperature_zero(dist_dir, tmp_path, monkeypatch):
                         lambda messages, **opts: temperatures.append(opts) or "")
     run([Question("q", "Q?", "A.", ())], Index(tmp_path / "index"), embed=fake_embed)
     assert temperatures == [{"temperature": 0}, {"temperature": 0}]
+
+
+def test_summary_breaks_down_by_category():
+    def result(category, ok):
+        q = Question("q", "Q?", "A.", (("yes",),), category=category)
+        return Result(q, Answer("no"), Answer("yes" if ok else "no"))
+
+    results = [result("story", True), result("items", False), result("story", False)]
+    assert summary(results).splitlines() == [
+        "no retrieval 0/3, with retrieval 1/3",
+        "  story: no retrieval 0/2, with retrieval 1/2",
+        "  items: no retrieval 0/1, with retrieval 0/1",
+    ]
