@@ -1,2 +1,22 @@
 {"id": "crystarium-leader", "question": "Who leads the Crystarium?", "answer": "The Crystal Exarch.", "must_mention": ["Exarch"]}
 {"id": "yshtola", "question": "Who is Y'shtola Rhul?", "answer": "A Miqo'te mage and a member of the Scions of the Seventh Dawn.", "must_mention": ["Scion"]}
+{"id": "twins-grandfather", "question": "Who is Alphinaud and Alisaie's grandfather?", "answer": "Archon Louisoix Leveilleur.", "must_mention": ["Louisoix"], "source_title": "Another Turn in the Coil"}
+{"id": "exarch-identity", "question": "What is the Crystal Exarch's true identity?", "answer": "G'raha Tia.", "must_mention": ["G'raha"]}
+{"id": "garlemald-founder", "question": "Who founded the Garlean Empire?", "answer": "Solus zos Galvus (Emet-Selch in disguise).", "must_mention": ["Solus"]}
+{"id": "ysayle-primal", "question": "Which primal did Ysayle become a vessel for?", "answer": "Shiva.", "must_mention": ["Shiva"], "source_title": "On Thin Ice"}
+{"id": "amaljaa-primal", "question": "Which primal do the Amalj'aa summon?", "answer": "Ifrit, Lord of the Inferno.", "must_mention": ["Ifrit"]}
+{"id": "sahagin-primal", "question": "Which primal do the sahagin worship?", "answer": "Leviathan, Lord of the Whorl.", "must_mention": ["Leviathan"]}
+{"id": "ixal-primal", "question": "Which primal do the Ixal summon?", "answer": "Garuda, Lady of the Vortex.", "must_mention": ["Garuda"]}
+{"id": "venat-hydaelyn", "question": "Who was Venat?", "answer": "The ancient who became Hydaelyn.", "must_mention": ["Hydaelyn"]}
+{"id": "endsinger", "question": "Who becomes the Endsinger at the end of Endwalker?", "answer": "Meteion.", "must_mention": ["Meteion"]}
+{"id": "lahabrea", "question": "Who is Lahabrea?", "answer": "An Ascian, one of the Convocation of Fourteen.", "must_mention": ["Ascian"], "source_title": "Into the Beast's Maw"}
+{"id": "merlwyb", "question": "Who leads Limsa Lominsa?", "answer": "Admiral Merlwyb Bloefhiswyn.", "must_mention": ["Merlwyb"], "source_title": "Feint and Strike"}
+{"id": "nanamo", "question": "Who is the sultana of Ul'dah?", "answer": "Nanamo Ul Namo.", "must_mention": ["Nanamo"]}
+{"id": "kan-e-senna", "question": "Who leads the Order of the Twin Adder?", "answer": "Kan-E-Senna, Elder Seedseer of Gridania.", "must_mention": ["Kan-E-Senna"]}
+{"id": "haurchefant-house", "question": "Which Ishgardian noble house does Haurchefant belong to?", "answer": "House Fortemps.", "must_mention": ["Fortemps"]}
+{"id": "estinien", "question": "What is Estinien's title in Ishgard?", "answer": "The Azure Dragoon.", "must_mention": ["Azure Dragoon"]}
+{"id": "zenos-viceroy", "question": "Which province was Zenos yae Galvus viceroy of?", "answer": "Ala Mhigo (he was also Doma's anointed viceroy).", "must_mention": ["Ala Mhigo"]}
+{"id": "thancred-weapon", "question": "What weapon does Thancred fight with in Shadowbringers?", "answer": "A gunblade.", "must_mention": ["gunblade"]}
+{"id": "wuk-lamat-goal", "question": "What title is Wuk Lamat competing for in Dawntrail?", "answer": "Dawnservant of Tural, through the rite of succession.", "must_mention": ["Dawnservant"]}
+{"id": "wuk-lamat-father", "question": "Who is Wuk Lamat's father?", "answer": "Gulool Ja Ja, the Dawnservant.", "must_mention": ["Gulool Ja Ja"]}
+{"id": "sphene", "question": "Who is Sphene?", "answer": "The queen of Alexandria.", "must_mention": ["Alexandria"]}
