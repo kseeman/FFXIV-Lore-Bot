@@ -4,6 +4,7 @@ import argparse
 import sys
 from pathlib import Path
 
+from xivlore.rag import DEFAULT_SEARCH, SEARCH_MODES
 from xivlore.sources.datamining import snapshot
 
 DEFAULT_CACHE = Path(".cache/ffxiv-datamining")
@@ -43,6 +44,7 @@ def main(argv: list[str] | None = None) -> int:
     ask.add_argument("question")
     ask.add_argument("-k", type=positive_int, default=8, help="passages to retrieve")
     ask.add_argument("--no-rag", action="store_true", help="ask the model without retrieval")
+    ask.add_argument("--search", choices=SEARCH_MODES, default=DEFAULT_SEARCH)
     ask.add_argument("--show-context", action="store_true", help="print retrieved passages")
     ask.add_argument("--out", type=Path, default=DEFAULT_OUT)
     ask.add_argument("--index", type=Path, default=DEFAULT_INDEX)
@@ -50,6 +52,7 @@ def main(argv: list[str] | None = None) -> int:
     evaluate = commands.add_parser("eval", help="score answers with and without retrieval")
     evaluate.add_argument("--questions", type=Path, default=DEFAULT_QUESTIONS)
     evaluate.add_argument("-k", type=positive_int, default=8, help="passages to retrieve")
+    evaluate.add_argument("--search", choices=SEARCH_MODES, default=DEFAULT_SEARCH)
     evaluate.add_argument("--index", type=Path, default=DEFAULT_INDEX)
     evaluate.add_argument("--reports", type=Path, default=DEFAULT_REPORTS)
 
@@ -107,7 +110,7 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"warning: {args.out}/ or the embedding model changed since indexing;"
                       " run `xivlore index`", file=sys.stderr)
         try:
-            answer = run_ask(args.question, index, k=args.k)
+            answer = run_ask(args.question, index, k=args.k, search=args.search)
         except OllamaError as e:
             print(f"error: {e}", file=sys.stderr)
             return 1
@@ -128,7 +131,8 @@ def main(argv: list[str] | None = None) -> int:
 
         try:
             index = Index(args.index)
-            results = ev.run(ev.load_questions(args.questions), index, k=args.k)
+            results = ev.run(ev.load_questions(args.questions), index, k=args.k,
+                             search=args.search)
         except (FileNotFoundError, OllamaError) as e:
             print(f"error: {e}", file=sys.stderr)
             return 1
@@ -138,7 +142,7 @@ def main(argv: list[str] | None = None) -> int:
         print(ev.summary(results))
         # Reports quote game text, so they stay under .cache/ with the index.
         args.reports.mkdir(parents=True, exist_ok=True)
-        path = args.reports / f"{datetime.now():%Y%m%d-%H%M%S}.md"
+        path = args.reports / f"{datetime.now():%Y%m%d-%H%M%S}-{args.search}.md"
         path.write_text(ev.report(results))
         print(f"wrote {path}")
     return 0

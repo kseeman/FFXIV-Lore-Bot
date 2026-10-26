@@ -4,7 +4,7 @@ import pytest
 
 from conftest import fake_embed
 
-from xivlore.rag.index import Index, build_index
+from xivlore.rag.index import Index, build_index, keyword_query
 
 
 @pytest.fixture
@@ -49,3 +49,41 @@ def test_stale_when_embed_model_changes(index_dir, dist_dir, monkeypatch):
 def test_missing_index(tmp_path):
     with pytest.raises(FileNotFoundError, match="xivlore index"):
         Index(tmp_path)
+
+
+def test_keyword_query_drops_stopwords_and_possessives():
+    assert keyword_query("Who is Y\u2019shtola's sister?") == '"y\'shtola"* OR "sister"*'
+    assert keyword_query("Who leads the Order of the Twin Adder?") == (
+        '"leads"* OR "order"* OR "twin"* OR "adder"*'
+    )
+    assert keyword_query("Who is it?") is None
+
+
+def test_keyword_search_finds_names(index_dir):
+    results = Index(index_dir).search("Tell me about Gil", k=1, mode="keyword")
+    assert [c.title for c, _ in results] == ["Gil"]
+
+
+def test_keyword_search_without_words_finds_nothing(index_dir):
+    assert Index(index_dir).search("Who is it?", mode="keyword") == []
+
+
+def test_hybrid_fuses_both_rankings(index_dir, monkeypatch):
+    index = Index(index_dir)
+    monkeypatch.setattr(index, "_vector_ranking", lambda q, n, embed: [(0, 0.9), (1, 0.8)])
+    monkeypatch.setattr(index, "_keyword_ranking", lambda q, n: [(1, 5.0), (2, 4.0)])
+    results = index.search("q", k=3, mode="hybrid")
+    # Passage 1 ranks in both lists, so it beats passage 0, which tops only one.
+    assert [index.chunks.index(c) for c, _ in results] == [1, 0, 2]
+    assert results[0][1] == pytest.approx(1 / 62 + 1 / 61)
+
+
+def test_unknown_search_mode(index_dir):
+    with pytest.raises(ValueError, match="unknown search mode"):
+        Index(index_dir).search("q", mode="fuzzy", embed=fake_embed)
+
+
+def test_index_without_keywords_gets_one(index_dir):
+    (index_dir / "keywords.sqlite").unlink()
+    results = Index(index_dir).search("gil", k=1, mode="keyword")
+    assert [c.title for c, _ in results] == ["Gil"]

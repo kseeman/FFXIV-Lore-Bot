@@ -24,7 +24,15 @@ def embed_and_unload(texts: list[str]) -> list[list[float]]:
     })["embeddings"]
 
 
-def chat(messages: list[dict], model: str = CHAT_MODEL, num_ctx: int = 6144) -> str:
+def chat(
+    messages: list[dict],
+    model: str = CHAT_MODEL,
+    num_ctx: int = 6144,
+    temperature: float | None = None,
+) -> str:
+    options = {"num_ctx": num_ctx}
+    if temperature is not None:
+        options["temperature"] = temperature
     response = _post("/api/chat", {
         "model": model,
         "messages": messages,
@@ -32,7 +40,7 @@ def chat(messages: list[dict], model: str = CHAT_MODEL, num_ctx: int = 6144) -> 
         # Gemma 4 thinks by default: on the eval that took 3-4x as long for the
         # same score, and now and then left no answer after the thinking.
         "think": False,
-        "options": {"num_ctx": num_ctx},
+        "options": options,
     })
     return response["message"]["content"]
 
