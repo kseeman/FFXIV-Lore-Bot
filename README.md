@@ -50,7 +50,30 @@ here.
 Each source lives in `src/xivlore/sources/<name>/` and yields records for the
 build step (`src/xivlore/build.py`) to write as Parquet configs.
 
-### Tests
+## Asking questions (`xivlore ask`)
+
+A retrieval prototype answers lore questions with a local model through
+[Ollama](https://ollama.com): it finds the passages of game text closest to the
+question and has the model answer from them, citing each one.
+
+```sh
+ollama pull embeddinggemma           # embeds passages and questions
+ollama pull gemma4:12b-it-qat        # writes the answers
+uv run xivlore index                 # embed a build into .cache/index/ (about 12 minutes)
+uv run xivlore ask "Who leads the Crystarium?"
+uv run xivlore ask --no-rag "Who leads the Crystarium?"   # the model alone
+```
+
+`--show-context` prints the retrieved passages. The default model fits a
+12 GB GPU; the embedder is unloaded after each question to leave it room.
+
+`xivlore eval` runs every question in `eval/questions.jsonl` with and without
+retrieval and writes the answers side by side to `.cache/eval/`. Each question
+has an expected answer and keywords a correct answer must mention. The index
+and reports quote game text, so both stay under `.cache/`. The questions file
+is committed, so it holds only questions and short answers, not quoted text.
+
+## Tests
 
 ```sh
 uv run pytest

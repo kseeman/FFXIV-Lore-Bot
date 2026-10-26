@@ -1,9 +1,14 @@
-"""A miniature ffxiv-datamining ``csv/en`` tree with just enough rows to join."""
+"""Miniature inputs: an ffxiv-datamining ``csv/en`` tree and a built corpus."""
 
 import csv
+import json
 from pathlib import Path
 
+import pyarrow as pa
+import pyarrow.parquet as pq
 import pytest
+
+from xivlore.build import DESCRIPTION_SCHEMA, TRANSCRIPT_SCHEMA
 
 
 def write_csv(path: Path, rows: list[list[object]]) -> None:
@@ -81,3 +86,31 @@ def csv_dir(tmp_path: Path) -> Path:
         [1, "Summon your chocobo.", "A loyal bird.", ""],
     ])
     return root
+
+
+def fake_embed(texts: list[str]) -> list[list[float]]:
+    """Stand-in for Ollama: one dimension per keyword, so similarity follows shared words."""
+    return [[float(w in t.lower()) + 0.01 for w in ("kupo", "gil", "hi")] for t in texts]
+
+
+@pytest.fixture
+def dist_dir(tmp_path: Path) -> Path:
+    """A built corpus with one transcript and two descriptions."""
+    dist = tmp_path / "dist"
+    transcript = dict.fromkeys(TRANSCRIPT_SCHEMA.names) | {
+        "id": "quest/X", "category": "quest", "title": "T", "text": "T\n\nA: hi",
+    }
+    descriptions = [
+        {"id": "TripleTriadCard/1/Description", "category": "triple_triad_card",
+         "sheet": "TripleTriadCard", "row_id": 1, "name": "Moogle", "field": "Description",
+         "text": "Kupo."},
+        {"id": "Item/1/Description", "category": "item", "sheet": "Item", "row_id": 1,
+         "name": "Gil", "field": "Description", "text": "Standard Eorzean currency."},
+    ]
+    for name, schema, rows in (("transcripts", TRANSCRIPT_SCHEMA, [transcript]),
+                               ("descriptions", DESCRIPTION_SCHEMA, descriptions)):
+        (dist / name).mkdir(parents=True)
+        pq.write_table(pa.Table.from_pylist(rows, schema=schema),
+                       dist / name / "train-00000-of-00001.parquet")
+    (dist / "manifest.json").write_text(json.dumps({"built_at": "2026-10-11T15:50:59+00:00"}))
+    return dist
