@@ -1,4 +1,4 @@
-"""xivlore: fetch game text, build the lore corpus, push it to Hugging Face."""
+"""xivlore: fetch game text, build the lore corpus, publish it, and ask it questions."""
 
 import argparse
 import sys
@@ -8,6 +8,7 @@ from xivlore.sources.datamining import snapshot
 
 DEFAULT_CACHE = Path(".cache/ffxiv-datamining")
 DEFAULT_OUT = Path("dist")
+DEFAULT_INDEX = Path(".cache/index")
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -25,6 +26,10 @@ def main(argv: list[str] | None = None) -> int:
     push = commands.add_parser("push", help="upload a build to a private HF dataset")
     push.add_argument("repo_id", help="e.g. your-username/ffxiv-lore")
     push.add_argument("--out", type=Path, default=DEFAULT_OUT)
+
+    index = commands.add_parser("index", help="embed a build for retrieval with Ollama")
+    index.add_argument("--out", type=Path, default=DEFAULT_OUT)
+    index.add_argument("--index", type=Path, default=DEFAULT_INDEX)
 
     args = parser.parse_args(argv)
     if args.command == "fetch":
@@ -50,6 +55,19 @@ def main(argv: list[str] | None = None) -> int:
         except NotPrivateError as e:
             print(f"error: {e}", file=sys.stderr)
             return 1
+    elif args.command == "index":
+        from xivlore.rag.index import build_index
+        from xivlore.rag.ollama import OllamaError
+
+        def progress(done: int, total: int) -> None:
+            print(f"\rembedded {done:,}/{total:,}", end="", file=sys.stderr, flush=True)
+
+        try:
+            meta = build_index(args.out, args.index, progress=progress)
+        except OllamaError as e:
+            print(f"\nerror: {e}", file=sys.stderr)
+            return 1
+        print(f"\nindexed {meta['chunks']:,} passages into {args.index}/")
     return 0
 
 

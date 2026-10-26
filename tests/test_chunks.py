@@ -1,7 +1,3 @@
-import pyarrow as pa
-import pyarrow.parquet as pq
-
-from xivlore.build import DESCRIPTION_SCHEMA, TRANSCRIPT_SCHEMA
 from xivlore.rag import chunks
 from xivlore.rag.chunks import chunk_corpus, transcript_chunks, windows
 
@@ -38,19 +34,9 @@ def test_transcript_chunks_repeat_header(monkeypatch):
     assert all(c.source_id == "quest/X" and c.title == "Way of the Archer" for c in out)
 
 
-def test_chunk_corpus_reads_both_configs(tmp_path):
-    transcript = dict.fromkeys(TRANSCRIPT_SCHEMA.names) | {
-        "id": "quest/X", "category": "quest", "title": "T", "text": "T\n\nA: hi",
-    }
-    description = {
-        "id": "TripleTriadCard/1/Description", "category": "triple_triad_card",
-        "sheet": "TripleTriadCard",
-        "row_id": 1, "name": "Moogle", "field": "Description", "text": "Kupo.",
-    }
-    for name, schema, row in (("transcripts", TRANSCRIPT_SCHEMA, transcript),
-                              ("descriptions", DESCRIPTION_SCHEMA, description)):
-        (tmp_path / name).mkdir()
-        pq.write_table(pa.Table.from_pylist([row], schema=schema),
-                       tmp_path / name / "train.parquet")
-    out = chunk_corpus(tmp_path)
-    assert [c.text for c in out] == ["T\n\nA: hi", "Moogle (triple triad card)\nKupo."]
+def test_chunk_corpus_reads_both_configs(dist_dir):
+    assert [c.text for c in chunk_corpus(dist_dir)] == [
+        "T\n\nA: hi",
+        "Moogle (triple triad card)\nKupo.",
+        "Gil (item)\nStandard Eorzean currency.",
+    ]
