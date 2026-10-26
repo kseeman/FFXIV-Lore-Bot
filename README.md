@@ -69,7 +69,9 @@ uv run xivlore ask --no-rag "Who leads the Crystarium?"   # the model alone
 
 `xivlore eval` runs every question in `eval/questions.jsonl` with and without
 retrieval and writes the answers side by side to `.cache/eval/`. Each question
-has an expected answer and keywords a correct answer must mention. The index
+has an expected answer, keywords a correct answer must mention (any of several
+alternatives can count), and optionally words that mark a wrong answer. The
+model answers at temperature 0, so repeated runs score the same. The index
 and reports quote game text, so both stay under `.cache/`. The questions file
 is committed, so it holds only questions and short answers, not quoted text.
 
